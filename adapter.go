@@ -3,6 +3,9 @@ package fluentd
 /**
 *
 *
+In addition to original adapter from https://github.com/dsouzajude/logspout-fluentd,
+this one handles retries to dial fluentd socket
+
 This is a fluent forwarder plugin for Logspout. It uses the fluent-logger-golang
 library to forward logs to fluentd (or fluentbit). Run logspout via the following
 command after building:
@@ -105,12 +108,12 @@ func NewAdapter(route *router.Route) (router.LogAdapter, error) {
 	if err != nil {
 		return nil, err
 	}
-	retryTimeout, err := strconv.Atoi(getenv("CONNECTION_RETRY_TIMEOUT", "1"))
+	retryWait, err := strconv.Atoi(getenv("CONNECTION_RETRY_WAIT", "1"))
 	if err != nil {
 		return nil, err
 	}
 
-	// retry on error
+	// Dial fluentd on given port. Retry on error
 	for i := 0; i <= retryCount; i++ {
 		_, err := transport.Dial(route.Address, route.Options)
 		if err != nil {
@@ -118,8 +121,8 @@ func NewAdapter(route *router.Route) (router.LogAdapter, error) {
 			if i == retryCount {
 				return nil, err
 			}
-			log.Printf("Retrying in %d seconds...\n", retryTimeout)
-			time.Sleep(time.Duration(retryTimeout) * time.Second)
+			log.Printf("Retrying in %d seconds...\n", retryWait)
+			time.Sleep(time.Duration(retryWait) * time.Second)
 		} else {
 			log.Println("Connectivity successful to fluentd @ " + route.Address)
 			break
