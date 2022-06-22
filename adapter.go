@@ -51,6 +51,12 @@ func getenv(key, fallback string) string {
 	return value
 }
 
+func debug(v ...interface{}) {
+	if os.Getenv("DEBUG") == "true" {
+		log.Println(v...)
+	}
+}
+
 // Adapter is an adapter for streaming JSON to a fluentd collector.
 type Adapter struct {
 	writer         *fluent.Fluent
@@ -64,7 +70,7 @@ func (ad *Adapter) Stream(logstream chan *router.Message) {
 		// Skip if message is empty
 		messageIsEmpty, err := regexp.MatchString("^[[:space:]]*$", message.Data)
 		if messageIsEmpty {
-			log.Println("Skipping empty message!")
+			debug("Skipping empty message!")
 			continue
 		}
 
@@ -86,7 +92,8 @@ func (ad *Adapter) Stream(logstream chan *router.Message) {
 			"container_name": message.Container.Name,
 			"source":         message.Source,
 		}
-		log.Println(tag, message.Time, record)
+
+		debug(tag, message.Time, record)
 
 		// Send to fluentd
 		err = ad.writer.PostWithTime(tag, message.Time, record)
