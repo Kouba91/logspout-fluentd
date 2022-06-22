@@ -111,25 +111,25 @@ func NewAdapter(route *router.Route) (router.LogAdapter, error) {
 		return nil, errors.New("Unable to find adapter: " + route.Adapter)
 	}
 
-	retryCount, err := strconv.Atoi(getenv("CONNECTION_MAX_RETRIES", "10"))
+	connMaxRetries, err := strconv.Atoi(getenv("CONNECTION_MAX_RETRIES", "10"))
 	if err != nil {
 		return nil, err
 	}
-	retryWait, err := strconv.Atoi(getenv("CONNECTION_RETRY_WAIT", "1"))
+	connRetryWait, err := strconv.Atoi(getenv("CONNECTION_RETRY_WAIT", "1"))
 	if err != nil {
 		return nil, err
 	}
 
 	// Dial fluentd on given port. Retry on error
-	for i := 0; i <= retryCount; i++ {
+	for i := 0; i <= connMaxRetries; i++ {
 		_, err := transport.Dial(route.Address, route.Options)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
-			if i == retryCount {
+			if i == connMaxRetries {
 				return nil, err
 			}
-			log.Printf("Retrying in %d seconds...\n", retryWait)
-			time.Sleep(time.Duration(retryWait) * time.Second)
+			log.Printf("Retrying in %d seconds...\n", connRetryWait)
+			time.Sleep(time.Duration(connRetryWait) * time.Second)
 		} else {
 			log.Println("Connectivity successful to fluentd @ " + route.Address)
 			break
